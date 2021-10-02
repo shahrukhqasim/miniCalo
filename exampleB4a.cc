@@ -114,6 +114,8 @@ void enable_physlimits(void)
 
 int main(int argc,char** argv)
 {
+
+  std::cout<<"Hello world\n";
   // Evaluate arguments
   //
   if ( argc > 7 ) {
@@ -146,7 +148,7 @@ int main(int argc,char** argv)
       PrintUsage();
       return 1;
     }
-  }  
+  }
   outfile += std::to_string(rseed);
   rseed++;
   // Detect interactive mode (if no macro provided) and define UI session
@@ -162,14 +164,14 @@ int main(int argc,char** argv)
 
     B4PartGeneratorBase::seedsoffset_ = 800*rseed;
     G4cout << "random seed " << rseed << G4endl;
-  
+
   // Construct the default run manager
   //
 #ifdef G4MULTITHREADED
   auto runManager = new G4MTRunManager;
-  if ( nThreads > 0 ) { 
+  if ( nThreads > 0 ) {
     runManager->SetNumberOfThreads(nThreads);
-  }  
+  }
 #else
   auto runManager = new G4RunManager;
 #endif
@@ -183,11 +185,11 @@ int main(int argc,char** argv)
   auto physicsList = new FTFP_BERT;
   physicsList->RegisterPhysics(new G4StepLimiterPhysics());
   runManager->SetUserInitialization(physicsList);
-    
+
   auto actionInitialization = new B4aActionInitialization(detConstruction);
   actionInitialization->setFilename(outfile);
   runManager->SetUserInitialization(actionInitialization);
-  
+
 
   enable_physlimits();
 
@@ -197,11 +199,13 @@ int main(int argc,char** argv)
   // Initialize visualization
   //
 #ifdef USEVIS
-   auto visManager = new G4VisExecutive;
-  // G4VisExecutive can take a verbosity argument - see /vis/verbose guidance.
- // G4VisManager* visManager = new G4VisExecutive("Quiet");
- // visManager->Initialize();
+//   auto visManager = new G4VisExecutive;
+//   G4VisExecutive can take a verbosity argument - see /vis/verbose guidance.
+  G4VisManager* visManager = new G4VisExecutive("Quiet");
+//  visManager->Initialize();
   //auto visManager = new G4VisExecutive();
+  visManager->RegisterGraphicsSystem(new G4OpenGLStoredQt);
+
      visManager->Initialize();
 #endif
   // Get the pointer to the User Interface manager
@@ -230,7 +234,7 @@ int main(int argc,char** argv)
 
   // Job termination
   // Free the store: user actions, physics_list and detector_description are
-  // owned and deleted by the run manager, so they should not be deleted 
+  // owned and deleted by the run manager, so they should not be deleted
   // in the main() program !
 
 //  delete visManager;
