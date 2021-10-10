@@ -1,11 +1,11 @@
-# Macro file for the visualization setting for the initialization phase 
+# Macro file for the visualization setting for the initialization phase
 # of the B4 example when running in interactive mode
 #
 
 # Use these open statements to open selected visualization
 #
 # Use this open statement to create an OpenGL view:
-/vis/open OGL 2048x1280-0+0
+/vis/open OGL 600x600-0+0
 #
 # Use this open statement to create an OpenInventor view:
 #/vis/open OIX
@@ -31,7 +31,7 @@
 /vis/drawVolume
 #
 # Specify view angle:
-/vis/viewer/set/viewpointThetaPhi -60. 30.
+/vis/viewer/set/viewpointThetaPhi 90. 180.
 #
 # Specify zoom value:
 #/vis/viewer/zoom 2.
@@ -65,7 +65,7 @@
 #
 # Many other options are available with /vis/modeling and /vis/filtering.
 # For example, to select colour by particle ID:
-/vis/modeling/trajectories/create/drawByParticleID
+#/vis/modeling/trajectories/create/drawByParticleID
 #/vis/modeling/trajectories/drawByParticleID-0/default/setDrawStepPts true
 # To select or override default colours (note: e+ is blue by default):
 #/vis/modeling/trajectories/list
@@ -80,26 +80,3 @@
 #
 # For file-based drivers, use this to create an empty detector view:
 #/vis/viewer/flush
-
-
-/vis/viewer/set/viewpointThetaPhi 90 0
-/vis/viewer/refresh
-/vis/viewer/pan -1.0
-/vis/viewer/zoom 8
-/vis/viewer/pan -0.5
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

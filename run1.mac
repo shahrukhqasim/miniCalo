@@ -1,15 +1,15 @@
 # Macro file for example B4
-# 
+#
 # Can be run in batch, without graphic
 # or interactively: Idle> /control/execute run1.mac
 #
-# Change the default number of workers (in multi-threading mode) 
-#/run/numberOfWorkers 4
+# Change the default number of workers (in multi-threading mode)
+#/run/numberOfThreads 4
 #
 # Initialize kernel
 /run/initialize
 #
-# Default kinematics: 
+# Default kinematics:
 # electron 50 MeV in direction (0.,0.,1.)
 # 1 event with tracking/verbose
 #
@@ -31,7 +31,7 @@
 /run/beamOn 20
 #
 # Magnetic field
-# 
+#
 /globalField/setValue 0.2 0 0 tesla
 /run/beamOn 3
 #

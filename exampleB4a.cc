@@ -69,18 +69,18 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 namespace {
-  void PrintUsage() {
-    G4cerr << " Usage: " << G4endl;
-    G4cerr << " exampleB4a [-m macro ] [-f filenumber=seed] [-o seedoffset (to be added to filenumber)]" << G4endl;
-    G4cerr << "   note: -t option is available only for multi-threaded mode."
-           << G4endl;
-  }
+    void PrintUsage() {
+      G4cerr << " Usage: " << G4endl;
+      G4cerr << " exampleB4a [-m macro ] [-f filenumber=seed] [-o seedoffset (to be added to filenumber)]" << G4endl;
+      G4cerr << "   note: -t option is available only for multi-threaded mode."
+             << G4endl;
+    }
 }
 
 
 void enable_physlimits(void)
 {
-    return;
+  return;
   // cf. Geant 4 HyperNews, Forum "Physics List", Message 129
   // http://geant4-hn.slac.stanford.edu:5090/HyperNews/public/get/phys-list/129.html
 
@@ -93,13 +93,13 @@ void enable_physlimits(void)
 
   particleIterator->reset();
   while ((*particleIterator)()) {
-  // iterate through all known particles
+    // iterate through all known particles
 
     G4ParticleDefinition *particleDefinition = particleIterator->value();
     G4ProcessManager *processManager = particleDefinition->GetProcessManager();
 
     if (processManager && !particleDefinition->IsShortLived() && particleDefinition->GetPDGCharge() != 0) {
-    // the process manager should exist, but we don't need to limit short-lived particles or neutrals
+      // the process manager should exist, but we don't need to limit short-lived particles or neutrals
 
       processManager->AddDiscreteProcess(stepLimiter);
       processManager->AddDiscreteProcess(specialCuts);
@@ -114,8 +114,6 @@ void enable_physlimits(void)
 
 int main(int argc,char** argv)
 {
-
-  std::cout<<"Hello world\n";
   // Evaluate arguments
   //
   if ( argc > 7 ) {
@@ -133,17 +131,17 @@ int main(int argc,char** argv)
     if      ( G4String(argv[i]) == "-m" ) macro = argv[i+1];
     else if ( G4String(argv[i]) == "-u" ) session = argv[i+1];
 #ifdef G4MULTITHREADED
-    else if ( G4String(argv[i]) == "-t" ) {
+      else if ( G4String(argv[i]) == "-t" ) {
       nThreads = G4UIcommand::ConvertToInt(argv[i+1]);
     }
 #endif
     else if (G4String(argv[i]) == "-f" ) {
 
-    	rseed += atoi(argv[i+1]);
+      rseed += atoi(argv[i+1]);
     }
     else if (G4String(argv[i]) == "-o" ) {
-        rseed += atoi(argv[i+1]);
-        }
+      rseed += atoi(argv[i+1]);
+    }
     else {
       PrintUsage();
       return 1;
@@ -154,16 +152,16 @@ int main(int argc,char** argv)
   // Detect interactive mode (if no macro provided) and define UI session
   //
   G4UIExecutive* ui = 0;
-    if ( ! macro.size() ) {
-      ui = new G4UIExecutive(argc, argv, session);
-    }
+  if ( ! macro.size() ) {
+    ui = new G4UIExecutive(argc, argv, session);
+  }
 
 
   // Choose the Random engine
   //
 
-    B4PartGeneratorBase::seedsoffset_ = 800*rseed;
-    G4cout << "random seed " << rseed << G4endl;
+  B4PartGeneratorBase::seedsoffset_ = 800*rseed;
+  G4cout << "random seed " << rseed << G4endl;
 
   // Construct the default run manager
   //
@@ -199,37 +197,35 @@ int main(int argc,char** argv)
   // Initialize visualization
   //
 #ifdef USEVIS
-//   auto visManager = new G4VisExecutive;
-//   G4VisExecutive can take a verbosity argument - see /vis/verbose guidance.
-  G4VisManager* visManager = new G4VisExecutive("Quiet");
-//  visManager->Initialize();
+  auto visManager = new G4VisExecutive;
+  // G4VisExecutive can take a verbosity argument - see /vis/verbose guidance.
+ // G4VisManager* visManager = new G4VisExecutive("Quiet");
+ // visManager->Initialize();
   //auto visManager = new G4VisExecutive();
-  visManager->RegisterGraphicsSystem(new G4OpenGLStoredQt);
-
      visManager->Initialize();
 #endif
   // Get the pointer to the User Interface manager
   G4UImanager* UImanager = G4UImanager::GetUIpointer();
 
-    if (argc!=1)   // batch mode
-      {
-        G4String command = "/control/execute ";
-        G4String fileName = macro;
-        UImanager->ApplyCommand(command+fileName);
-      }
-    else
-      {  // interactive mode : define UI session
+  if (argc!=1)   // batch mode
+  {
+    G4String command = "/control/execute ";
+    G4String fileName = macro;
+    UImanager->ApplyCommand(command+fileName);
+  }
+  else
+  {  // interactive mode : define UI session
 
-        G4UIExecutive* ui = new G4UIExecutive(argc, argv);
+    G4UIExecutive* ui = new G4UIExecutive(argc, argv);
 
-        UImanager->ApplyCommand("/control/execute init_vis.mac");
+    UImanager->ApplyCommand("/control/execute init_vis.mac");
 
-        if (ui->IsGUI())
-          UImanager->ApplyCommand("/control/execute gui.mac");
-        ui->SessionStart();
-        delete ui;
+    if (ui->IsGUI())
+      UImanager->ApplyCommand("/control/execute gui.mac");
+    ui->SessionStart();
+    delete ui;
 
-      }
+  }
 
 
   // Job termination
