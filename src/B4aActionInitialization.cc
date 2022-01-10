@@ -34,62 +34,57 @@
 #include "B4aEventAction.hh"
 #include "B4aSteppingAction.hh"
 #include "B4DetectorConstruction.hh"
-#include "B4JetGeneratorAction.hh"
+#include "PrimariesGenerator.hh"
 #include "defines.h"
+#include "B4aEventAction.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 B4aActionInitialization::B4aActionInitialization
-                            (B4DetectorConstruction* detConstruction)
- : G4VUserActionInitialization(),
-   fDetConstruction(detConstruction)
-{}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-B4aActionInitialization::~B4aActionInitialization()
-{}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void B4aActionInitialization::BuildForMaster() const
-{
-#ifndef NOPYTHIA
-#ifdef USEPYTHIA
-  auto gen=new B4JetGeneratorAction(USEPYTHIA);
-#else
-    auto gen=new B4PrimaryGeneratorAction;
-#endif
-#else
-    auto gen=new B4PrimaryGeneratorAction;
-#endif
-  auto ev=new B4aEventAction;
-  SetUserAction(new B4RunAction(gen,ev,""));
+        (B4DetectorConstructionBase *detConstruction,
+         B4aEventAction *event_action,
+         B4PartGeneratorBase *primaries_generator)
+        : G4VUserActionInitialization(),
+          fDetConstruction(detConstruction),
+          eventAction(event_action),
+          primaries_generator(primaries_generator) {
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void B4aActionInitialization::Build() const
-{
+B4aActionInitialization::~B4aActionInitialization() {}
 
-#ifndef NOPYTHIA
-#ifdef USEPYTHIA
-  auto gen=new B4JetGeneratorAction(USEPYTHIA);
-#else
-    auto gen=new B4PrimaryGeneratorAction;
-#endif
-#else
-    auto gen=new B4PrimaryGeneratorAction;
-#endif
-  SetUserAction(gen);
-  auto eventAction = new B4aEventAction;
-  eventAction->setGenerator(gen);
-  eventAction->setDetector(fDetConstruction);
-  auto runact=new B4RunAction(gen,eventAction,fname_);
-  SetUserAction(runact);
-  SetUserAction(eventAction);
-  SetUserAction(new B4aSteppingAction(fDetConstruction,eventAction));
-  G4cout << "actions initialised" <<G4endl;
-}  
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void B4aActionInitialization::BuildForMaster() const {
+    B4aEventAction *ev;
+    if (eventAction == nullptr)
+        ev = new B4aEventAction(std::string(), false);
+    else
+        ev = eventAction;
+
+    SetUserAction(new B4RunAction(primaries_generator, ev));
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void B4aActionInitialization::Build() const {
+    SetUserAction(primaries_generator);
+
+    B4aEventAction *ev;
+    if (eventAction == nullptr)
+        ev = new B4aEventAction(std::string(), false);
+    else
+        ev = eventAction;
+
+    ev->setGenerator(primaries_generator);
+    ev->setDetector(fDetConstruction);
+    auto runact = new B4RunAction(primaries_generator, ev);
+    SetUserAction(runact);
+    SetUserAction(eventAction);
+    auto steppingAction = new B4aSteppingAction(fDetConstruction, ev);
+    SetUserAction(steppingAction);
+    G4cout << "actions initialised" << G4endl;
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

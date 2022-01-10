@@ -36,114 +36,57 @@
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
 #include "B4PrimaryGeneratorAction.hh"
+#include <fstream>
+#include <iostream>
+//#include <filesystem>
+//namespace fs = std::filesystem;
 
 #include "B4aEventAction.hh"
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-B4RunAction::B4RunAction(B4PartGeneratorBase *gen, B4aEventAction* ev, G4String fname)
- : G4UserRunAction()
-{ 
-	fname_=fname;
-	eventact_=ev;
-  // set printing event number per each event
-  G4RunManager::GetRunManager()->SetPrintProgress(1);     
+B4RunAction::B4RunAction(B4PartGeneratorBase *gen, B4aEventAction *ev)
+        : G4UserRunAction() {
+    eventact_ = ev;
+    // set printing event number per each event
+    G4RunManager::GetRunManager()->SetPrintProgress(1);
 
-  // Create analysis manager
-  // The choice of analysis technology is done via selectin of a namespace
-  // in B4Analysis.hh
-  auto analysisManager = G4AnalysisManager::Instance();
-  G4cout << "Using " << analysisManager->GetType() << G4endl;
+    // Create analysis manager
+    // The choice of analysis technology is done via selectin of a namespace
+    // in B4Analysis.hh
+    generator_ = gen;
 
-  // Create directories 
-  //analysisManager->SetHistoDirectoryName("histograms");
-  //analysisManager->SetNtupleDirectoryName("ntuple");
-  analysisManager->SetVerboseLevel(1);
-  analysisManager->SetNtupleMerging(true);
-    // Note: merging ntuples is available only with Root output
-
-  // Book histograms, ntuple
-  //
-  
-
-  // Creating ntuple
-  //
-  analysisManager->CreateNtuple("B4", "Edep and TrackL");
-  generator_=gen;
-#ifndef ONLY_ENERGY_OUTPUT
-//  //if(! generator_->isJetGenerator()){
-//      G4cout << "creating particle entries" << G4endl;
-//      auto parts=generator_->generateAvailableParticles();
-//      for(const auto& p:parts){
-//          G4cout << p << G4endl;
-//          analysisManager->CreateNtupleIColumn(p);
-//      }
-//  //}
-  analysisManager->CreateNtupleDColumn("true_energy");
-  analysisManager->CreateNtupleDColumn("true_x");
-  analysisManager->CreateNtupleDColumn("true_y");
-  analysisManager->CreateNtupleDColumn("true_r");
-  analysisManager->CreateNtupleDColumn("true_dir_x");
-  analysisManager->CreateNtupleDColumn("true_dir_y");
-  analysisManager->CreateNtupleDColumn("true_dir_z");
-  analysisManager->CreateNtupleDColumn("true_angle");
-
-
-  analysisManager->CreateNtupleFColumn("rechit_x",eventact_->rechit_x_);
-  analysisManager->CreateNtupleFColumn("rechit_y",eventact_->rechit_y_);
-  analysisManager->CreateNtupleFColumn("rechit_z",eventact_->rechit_z_);
-  analysisManager->CreateNtupleFColumn("rechit_layer",eventact_->rechit_layer_);
-#endif
-  analysisManager->CreateNtupleFColumn("rechit_phi",eventact_->rechit_phi_);
-  analysisManager->CreateNtupleFColumn("rechit_eta",eventact_->rechit_eta_);
- // analysisManager->CreateNtupleIColumn("rechit_detid",eventact_->rechit_detid_);
-
-//if(false){
-  analysisManager->CreateNtupleFColumn("rechit_energy",eventact_->rechit_energy_);
- // analysisManager->CreateNtupleDColumn("rechit_absorber_energy",eventact_->rechit_absorber_energy_);
-//}
-  analysisManager->FinishNtuple();
-
-  G4cout << "run action initialised" << G4endl;
+    G4cout << "run action initialised" << G4endl;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-B4RunAction::~B4RunAction()
-{
-  delete G4AnalysisManager::Instance();  
+B4RunAction::~B4RunAction() {
+    delete G4AnalysisManager::Instance();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void B4RunAction::BeginOfRunAction(const G4Run* /*run*/)
-{ 
-  //inform the runManager to save random number seed
-  //G4RunManager::GetRunManager()->SetRando//mNumberStore(true);
-  
-  // Get analysis manager
-  auto analysisManager = G4AnalysisManager::Instance();
-
-  // Open an output file
-  //
-  G4String fileName = fname_;
-  analysisManager->OpenFile(fileName);
+void B4RunAction::BeginOfRunAction(const G4Run * /*run*/) {
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void B4RunAction::EndOfRunAction(const G4Run* /*run*/)
-{
-  // print histogram statistics
-  //
-  auto analysisManager = G4AnalysisManager::Instance();
-  if (false && analysisManager->GetH1(1) ) {
-    
-  }
+void B4RunAction::EndOfRunAction(const G4Run *run) {
+    // print histogram statistics
+    //
+    auto analysisManager = G4AnalysisManager::Instance();
+    if (false && analysisManager->GetH1(1)) {
 
-  // save histograms & ntuple
-  //
-  analysisManager->Write();
-  analysisManager->CloseFile();
+
+    }
+
+    // save histograms & ntuple
+    //
+
+    if (do_root) {
+        analysisManager->Write();
+        analysisManager->CloseFile();
+    }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

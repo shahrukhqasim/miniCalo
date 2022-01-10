@@ -42,6 +42,7 @@
 #include "G4Step.hh"
 #include "B4RunAction.hh"
 #include "B4PrimaryGeneratorAction.hh"
+
 /// Event action class
 ///
 /// It defines data members to hold the energy deposit and track lengths
@@ -49,21 +50,46 @@
 /// - fEnergyAbs, fEnergyGap, fTrackLAbs, fTrackLGap
 /// which are collected step by step via the functions
 /// - AddAbs(), AddGap()
+
+
+class SOAParticles {
+public:
+    std::vector<double> particles_vertex_position_x;
+    std::vector<double> particles_vertex_position_y;
+    std::vector<double> particles_vertex_position_z;
+
+    std::vector<double> particles_momentum_direction_x;
+    std::vector<double> particles_momentum_direction_y;
+    std::vector<double> particles_momentum_direction_z;
+
+    std::vector<double> particles_kinetic_energy;
+    std::vector<int> particles_pdgid;
+
+    std::vector<double> particles_total_energy_deposited_active;
+    std::vector<double> particles_total_energy_deposited_all;
+
+    std::unordered_map<int, int> trackid_to_idx;
+};
+
+
 class G4VPhysicalVolume;
 class B4aEventAction : public G4UserEventAction
 {
 	friend B4RunAction;
   public:
-    B4aEventAction();
+    B4aEventAction(std::string output_folder_name, bool do_root);
     virtual ~B4aEventAction();
 
     virtual void  BeginOfEventAction(const G4Event* event);
     virtual void    EndOfEventAction(const G4Event* event);
     
     void AddEnergy(G4double de, G4double dl);
-    
 
-    void accumulateVolumeInfo(G4VPhysicalVolume *,const G4Step* );
+
+    template<typename T>
+    void writeToBinaryFile(std::string file, std::vector<T> &x, int id, int num_elements);
+
+    void accumulateStepData(G4VPhysicalVolume *volume, const G4Step *step);
 
     void clear(){
     	rechit_energy_.clear();
@@ -86,13 +112,14 @@ class B4aEventAction : public G4UserEventAction
     	generator_=generator;
     	navail_parts = generator_->generateAvailableParticles().size();
     }
-    void setDetector(B4DetectorConstruction * detector){
+    void setDetector(B4DetectorConstructionBase *detector){
     	detector_=detector;
     }
 
   private:
     G4double  fEnergyAbs;
     G4double totalen_;
+public:
     std::vector<float>  rechit_energy_,rechit_absorber_energy_;
     std::vector<float>  rechit_x_;
     std::vector<float>  rechit_y_;
@@ -101,8 +128,52 @@ class B4aEventAction : public G4UserEventAction
     std::vector<float>  rechit_eta_;
     std::vector<float>  rechit_phi_;
     std::vector<float>  rechit_vxy_;
+public:
+    const std::vector<float> &getRechitEnergy() const;
+
+    const std::vector<float> &getRechitX() const;
+
+    const std::vector<float> &getRechitY() const;
+
+    const std::vector<float> &getRechitZ() const;
+
+private:
     std::vector<int>       rechit_detid_;
     std::vector<const G4VPhysicalVolume * > allvolumes_;
+
+
+//    std::vector<G4ThreeVector> particles_vertex_position;
+//    std::vector<G4ThreeVector> particles_position;
+//    std::vector<double> particles_kinetic_energy;
+//    std::vector<G4ThreeVector> particles_momentum_direction;
+//    std::vector<int> particles_pdgid;
+
+//    std::vector<double> particles_total_energy_deposited;
+//    std::vector<double> particles_total_energy_deposited_2;
+//    std::unordered_map<int, int> particles_buckets;
+//    std::unordered_map<int, int> tracks_buckets;
+
+    SOAParticles particlesEntering;
+
+    std::vector<int> hits_particles_id;
+    std::vector<float> hits_particles_deposits;
+public:
+    const std::vector<float> &getHitsParticlesSensorIdx() const;
+
+private:
+    std::vector<float> hits_particles_sensor_idx;
+public:
+    const std::vector<int> &getHitsParticles() const;
+
+    const std::vector<float> &getHitsDeposits() const;
+
+public:
+    int particle_index_not_found = 0;
+    double total_deposit = 0;
+    double total_deposit_2 = 0;
+private:
+
+    std::vector<int>  rechit_idx__;
 
     G4double  fEnergyGap;
     G4double  fTrackLAbs; 
@@ -110,10 +181,14 @@ class B4aEventAction : public G4UserEventAction
 
 
     B4PartGeneratorBase * generator_;
-    B4DetectorConstruction * detector_;
+    B4DetectorConstructionBase * detector_;
 
     size_t nsteps_;
     size_t navail_parts;
+
+    std::string output_bin_folder;
+
+    bool do_root;
 
 };
 

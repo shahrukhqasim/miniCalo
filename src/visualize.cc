@@ -27,6 +27,7 @@
 /// \file exampleB4a.cc
 /// \brief Main program of the B4a example
 
+#include <B4DetectorConstructionFP.hh>
 #include "B4DetectorConstruction.hh"
 #include "B4aActionInitialization.hh"
 
@@ -105,13 +106,29 @@ int main(int argc,char** argv)
 
     // Set mandatory initialization classes
     //
-    auto detConstruction = new B4DetectorConstruction();
+
+    std::string filename("/Users/shahrukhqasim/Workspace/NextCal/ShahRukhStudies/scripts/toydetector/detector_specs.json");
+
+    Json::Value root;
+    std::ifstream ifs;
+    ifs.open(filename);
+
+    Json::CharReaderBuilder builder;
+    builder["collectComments"] = true;
+    JSONCPP_STRING errs;
+    if (!parseFromStream(builder, ifs, &root, &errs)) {
+        std::cout << errs << std::endl;
+        return EXIT_FAILURE;
+    }
+
+//    auto detConstruction = new B4DetectorConstructionFP(root);
+  auto detConstruction = new B4DetectorConstruction(root);
     runManager->SetUserInitialization(detConstruction);
 
     auto physicsList = new FTFP_BERT;
     runManager->SetUserInitialization(physicsList);
 
-    auto actionInitialization = new B4aActionInitialization(detConstruction);
+    auto actionInitialization = new B4aActionInitialization(detConstruction, nullptr, nullptr);
     runManager->SetUserInitialization(actionInitialization);
 
     // Initialize visualization

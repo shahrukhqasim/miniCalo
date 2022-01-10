@@ -96,6 +96,7 @@ private:
 	G4double energyscalefactor_;
 
 	int layer_;
+	int rechit_idx_;
 
 	int global_detid_;
 

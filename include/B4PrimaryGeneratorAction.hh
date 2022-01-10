@@ -31,14 +31,17 @@
 #ifndef B4PrimaryGeneratorAction_h
 #define B4PrimaryGeneratorAction_h 1
 
+
 #include "defines.h"
 
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "globals.hh"
 #include <vector>
+#include "json/json.h"
 #include "B4PartGeneratorBase.hh"
 
 class G4ParticleGun;
+
 class G4Event;
 
 /// The primary generator action class with particle gum.
@@ -50,41 +53,45 @@ class G4Event;
 
 
 
-class B4PrimaryGeneratorAction : public B4PartGeneratorBase
-{
+class B4PrimaryGeneratorAction : public B4PartGeneratorBase {
 public:
-  B4PrimaryGeneratorAction();    
-  virtual ~B4PrimaryGeneratorAction();
+    B4PrimaryGeneratorAction(std::string jsonfile);
 
-  virtual void GeneratePrimaries(G4Event* event);
-  
-  // set methods
-  void SetRandomFlag(G4bool value);
+    virtual ~B4PrimaryGeneratorAction();
 
-  G4ParticleGun* getGun(){return fParticleGun;}
+    virtual void GeneratePrimaries(G4Event *event);
+
+    virtual void GeneratePrimariesx(G4Event *event);
+
+    // set methods
+    void SetRandomFlag(G4bool value);
+
+    G4ParticleGun *getGun() { return fParticleGun; }
 
 
-  virtual bool isJetGenerator(){return false;}
+    virtual bool isJetGenerator() { return false; }
 
 
+    std::vector<G4String> generateAvailableParticles() const;
 
-  std::vector<G4String> generateAvailableParticles()const;
+    particles getParticle() const { return particleid_; }
 
-  particles getParticle()const{return particleid_;}
+    int isParticle(int i) const {
+        return i == particleid_;
+    }
 
-  int isParticle(int i)const{
-	  return i==particleid_;
-  }
-
-  G4String getParticleName(enum particles )const;
+    G4String getParticleName(enum particles) const;
 
 private:
-  G4ParticleGun*  fParticleGun; // G4 particle gun
+    G4ParticleGun *fParticleGun; // G4 particle gun
 
-  G4String setParticleID(enum particles );
+    G4String setParticleID(enum particles);
+    G4String setParticleID(std::string particles);
 
-  particles particleid_;
-  bool from_beamspot_;
+    particles particleid_;
+    bool from_beamspot_;
+    Json::Value m_particles;
+
 
 };
 

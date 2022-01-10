@@ -34,8 +34,10 @@
 #include "defines.h"
 #include "G4VUserActionInitialization.hh"
 #include "G4String.hh"
+#include "B4aEventAction.hh"
 
 class B4DetectorConstruction;
+class B4DetectorConstructionBase;
 
 /// Action initialization class.
 ///
@@ -43,7 +45,9 @@ class B4DetectorConstruction;
 class B4aActionInitialization : public G4VUserActionInitialization
 {
   public:
-    B4aActionInitialization(B4DetectorConstruction*);
+    B4aActionInitialization(B4DetectorConstructionBase *detConstruction,
+                            B4aEventAction *event_action,
+                            B4PartGeneratorBase *primaries_generator);
     virtual ~B4aActionInitialization();
 
     virtual void BuildForMaster() const;
@@ -54,8 +58,10 @@ class B4aActionInitialization : public G4VUserActionInitialization
     }
 
   private:
-    B4DetectorConstruction* fDetConstruction;
+    B4DetectorConstructionBase* fDetConstruction;
     G4String fname_;
+    B4aEventAction* eventAction;
+    B4PartGeneratorBase *primaries_generator;
 };
 
 #endif

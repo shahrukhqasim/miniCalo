@@ -31,6 +31,7 @@
 #ifndef B4DetectorConstruction_h
 #define B4DetectorConstruction_h 1
 
+#include <unordered_map>
 #include "defines.h"
 
 #include "G4VUserDetectorConstruction.hh"
@@ -39,6 +40,8 @@
 #include "G4ThreeVector.hh"
 
 #include "sensorContainer.h"
+#include "json/json.h"
+#include "G4Cons.hh"
 
 class G4VPhysicalVolume;
 class G4GlobalMagFieldMessenger;
@@ -58,10 +61,38 @@ class G4Material;
 /// In addition a transverse uniform magnetic field is defined 
 /// via G4GlobalMagFieldMessenger class.
 
-class B4DetectorConstruction : public G4VUserDetectorConstruction
+G4double computeTheta(const G4double& eta );
+
+double etaToR(const G4double& eta, const G4double& z);
+G4Cons * createCons(
+        G4String name,
+        G4double start_eta,
+        G4double eta_width,
+        G4double start_z,
+        G4double z_length,
+        G4double start_phi,
+        G4double end_phi);
+
+
+class B4DetectorConstructionBase : public G4VUserDetectorConstruction {
+public:
+    virtual const std::vector<std::shared_ptr<sensorContainer>>* getActiveSensors()const = 0;
+	virtual const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<sensorContainer>>> *
+	getIndexedSensorContainers() const = 0;
+    virtual double getCaloStartZ()const = 0;
+    virtual G4VPhysicalVolume* getWorld() const = 0;
+};
+
+class B4DetectorConstruction : public B4DetectorConstructionBase
 {
-  public:
-    B4DetectorConstruction();
+protected:
+	std::unordered_map<int, std::unordered_map<int, std::shared_ptr<sensorContainer>>> indexedSensorContainers;
+public:
+	virtual const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<sensorContainer>>> *
+	getIndexedSensorContainers() const;
+
+public:
+    B4DetectorConstruction(Json::Value& value);
     virtual ~B4DetectorConstruction();
 
   public:
@@ -76,6 +107,11 @@ class B4DetectorConstruction : public G4VUserDetectorConstruction
 		homogenous_no_tracker,
 		fullendcap
     };
+
+    G4VPhysicalVolume *getWorld() const override;
+
+    double getCaloStartZ() const override;
+
     virtual G4VPhysicalVolume* Construct();
     virtual void ConstructSDandField();
 
@@ -83,7 +119,7 @@ class B4DetectorConstruction : public G4VUserDetectorConstruction
 
     bool isActiveVolume(G4VPhysicalVolume*)const;
 
-    const std::vector<sensorContainer>* getActiveSensors()const;
+    virtual const std::vector<std::shared_ptr<sensorContainer>>* getActiveSensors()const;
 
      
   private:
@@ -92,65 +128,63 @@ class B4DetectorConstruction : public G4VUserDetectorConstruction
     void DefineMaterials();
     G4VPhysicalVolume* DefineVolumes();
 
+    void createActiveCellWheel(G4Material *material, G4double start_eta, G4double end_eta,
+								   G4double start_z, G4double end_z, G4double nphi, G4int layernum,
+								   G4int cellnum, G4LogicalVolume *layerLV, G4ThreeVector position,
+								   G4double z_step_max);
 
-    G4VPhysicalVolume* createCellWheel(
-            G4ThreeVector position,
-            G4LogicalVolume* layerLV,
-            G4double start_eta,
-            G4double eta_width,
-            G4double start_z,
-            G4double z_length,
-            G4int nphi,
-            G4int layernum,
-            G4int cellnum,
-            G4Material* active_m,
-            G4Material* abs_m=0,
-            G4double abs_fraction=0);
 
-    G4VPhysicalVolume* createLayer(
-            G4LogicalVolume * caloLV,
-            G4double start_eta,
-            G4double end_eta,
-            G4int n_cells_eta,
-            G4int n_cells_phi,
-            G4double start_z,
-            G4double z_length,
-            G4ThreeVector position,
-            G4String name, int layernumber);
+	void createAbsorberCellWheel(G4Material *material, G4double start_eta, G4double end_eta,
+									 G4double start_z, G4double end_z, G4double nphi, G4int layernum,
+									 G4int cellnum, G4LogicalVolume *layerLV, G4ThreeVector position,
+									 G4double z_step_max);
+
+    G4Material* getMaterial(std::string name);
+
+
+	void createLayer(Json::Value &layer, int layernum);
+	void createAbsorber(Json::Value &layer, int layernum);
+	void createActiveLayer(Json::Value &layer, int layernum);
   
-    void createCalo(G4LogicalVolume * worldLV,G4ThreeVector position,G4String name);
+    void createCalo(G4LogicalVolume *worldLV, G4String name);
     // data members
     //
     static G4ThreadLocal G4GlobalMagFieldMessenger*  fMagFieldMessenger; 
                                       // magnetic field messenger
 
-    std::vector<sensorContainer> activecells_;
+    std::vector<std::shared_ptr<sensorContainer>> activecells_;
 
     G4bool  fCheckOverlaps; // option to activate checking of volumes overlaps
 
     G4double layerThicknessEE,layerThicknessHB;
-    G4double Calo_start_eta;
-    G4double Calo_end_eta;
-    G4double Calo_start_z;
+    G4double Calo_start_eta=-1;
+    G4double Calo_end_eta=-1;
+    G4double m_calo_start_z=-1;
     std::vector<G4double> layerThicknesses,layerAbsorberFractions;
     G4int Ncalowedges;
     std::vector<G4int> layerGranularity;
     std::vector<G4int> layerSplitGranularity;
     G4double calorSizeXY;
-    G4Material * m_vacuum, *m_pb, *m_pbtungsten, *m_silicon, *m_cu;
+    G4Material * m_vacuum, *m_pb, *m_pbtungsten, *m_silicon, *m_cu, *m_stainlesssteel, *m_air;
     G4int nofEELayers,nofHB, noTrackLayers;
     G4double calorThickness;
+
+    Json::Value& m_detector_specs;
 
 
     G4double limit_in_calo_time_max_, limit_in_calo_energy_max_;
     G4double limit_world_time_max_,limit_world_energy_max_;
+
+	G4LogicalVolume * m_worldLV;
+
+    G4VPhysicalVolume* m_worldPV;
 
 
 };
 
 // inline functions
 
-inline const std::vector<sensorContainer>* B4DetectorConstruction::getActiveSensors()const{
+inline const std::vector<std::shared_ptr<sensorContainer>>* B4DetectorConstruction::getActiveSensors()const{
 	return &activecells_;
 }
 

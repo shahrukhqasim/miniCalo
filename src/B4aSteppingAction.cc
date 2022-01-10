@@ -40,8 +40,8 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 B4aSteppingAction::B4aSteppingAction(
-		const B4DetectorConstruction* detectorConstruction,
-		B4aEventAction* eventAction)
+        const B4DetectorConstructionBase *detectorConstruction,
+        B4aEventAction *eventAction)
 : G4UserSteppingAction(),
   fDetConstruction(detectorConstruction),
   fEventAction(eventAction)
@@ -82,7 +82,8 @@ void B4aSteppingAction::UserSteppingAction(const G4Step* step)
 
     }
 
-	fEventAction->accumulateVolumeInfo(volume, step);
+
+    fEventAction->accumulateStepData(volume, step);
 
 
 }

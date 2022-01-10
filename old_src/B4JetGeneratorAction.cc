@@ -32,6 +32,8 @@
 
 #ifndef NOPYTHIA
 
+
+
 #include "G4RunManager.hh"
 #include "G4LogicalVolumeStore.hh"
 #include "G4LogicalVolume.hh"
@@ -131,6 +133,8 @@ B4JetGeneratorAction::B4JetGeneratorAction(particles p) :
   default:
     break;
   }
+
+
   pythia_.init();
   pythia_.rndm.init(seedsoffset_);
 

@@ -62,7 +62,7 @@ class B4aEventAction;
 class B4RunAction : public G4UserRunAction
 {
   public:
-    B4RunAction(B4PartGeneratorBase * gen, B4aEventAction* e, G4String fn);
+    B4RunAction(B4PartGeneratorBase *gen, B4aEventAction *ev);
     virtual ~B4RunAction();
 
     void linkGenerator(B4PartGeneratorBase* g){
@@ -82,6 +82,9 @@ class B4RunAction : public G4UserRunAction
     B4PartGeneratorBase * generator_;
     B4aEventAction* eventact_;
     G4String fname_;
+    G4String output_bin_folder;
+
+    bool do_root;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

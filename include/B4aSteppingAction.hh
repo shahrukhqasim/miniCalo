@@ -34,8 +34,10 @@
 #include "defines.h"
 
 #include "G4UserSteppingAction.hh"
+#include "B4DetectorConstruction.hh"
 
 class B4DetectorConstruction;
+class B4DetectorConstructionBase;
 class B4aEventAction;
 
 /// Stepping action class.
@@ -47,14 +49,14 @@ class B4aEventAction;
 class B4aSteppingAction : public G4UserSteppingAction
 {
 public:
-  B4aSteppingAction(const B4DetectorConstruction* detectorConstruction,
-                    B4aEventAction* eventAction);
+  B4aSteppingAction(const B4DetectorConstructionBase *detectorConstruction,
+                    B4aEventAction *eventAction);
   virtual ~B4aSteppingAction();
 
   virtual void UserSteppingAction(const G4Step* step);
     
 private:
-  const B4DetectorConstruction* fDetConstruction;
+  const B4DetectorConstructionBase* fDetConstruction;
   B4aEventAction*  fEventAction;  
 };
 
