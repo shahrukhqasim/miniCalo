@@ -99,7 +99,6 @@ B4DetectorConstruction::B4DetectorConstruction(Json::Value& value)
     limit_in_calo_time_max_=500*ns;//this could be more low energy stuff
 //    limit_in_calo_energy_max_=500*keV;
 	limit_in_calo_energy_max_=0.1*MeV;
-
     limit_world_time_max_=500*ns; //either got there or not (30ns should be easily sufficient
     limit_world_energy_max_=100*eV;
 

@@ -25,6 +25,8 @@ PYBIND11_MODULE(minicalo, handle){
 
     handle.def("simulate_pu", &simulate_pu);
     handle.def("simulate_particle", &simulate_particle);
+    handle.def("get_sensor_data", &get_sensor_data);
     handle.def("initialize", &initialize);
+    handle.def("initialize_test", &initialize_test);
     handle.def("wrap_up", &wrap_up);
 }

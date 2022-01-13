@@ -122,7 +122,7 @@ set(CoreFiles src/Calorimeter.cc
         src/B4RunAction.cc
         src/B4aEventAction.cc
         src/sensorContainer.cc
-        old_src/B4DetectorConstructionFP.cc)
+        )
 
 pybind11_add_module(minicalo src/minicalo_library.cc ${CoreFiles})
 add_executable(test_cases_library test/test_cases_library.cc ${CoreFiles})

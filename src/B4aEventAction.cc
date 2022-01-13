@@ -51,10 +51,6 @@ B4aEventAction::B4aEventAction(std::string output_folder_name, bool do_root)
           fTrackLGap(0.),
           generator_(0),
           nsteps_(0) {
-    //create vector ntuple here
-//	auto analysisManager = G4AnalysisManager::Instance();
-
-
     this->output_bin_folder = output_folder_name;
 
     this->do_root = do_root;
@@ -64,37 +60,111 @@ B4aEventAction::B4aEventAction(std::string output_folder_name, bool do_root)
 
 B4aEventAction::~B4aEventAction() {}
 
+void SOAParticles::add(double vertex_position_x, double vertex_position_y, double vertex_position_z,
+                       double momentum_direction_x, double momentum_direction_y, double momentum_direction_z,
+                       double kinetic_energy, int pdgid, int trackid, bool tagged, int parent_idx) {
+
+    trackid_to_idx[trackid] = (int) particles_vertex_position_x.size();
+    particles_vertex_position_x.push_back(vertex_position_x);
+    particles_vertex_position_y.push_back(vertex_position_y);
+    particles_vertex_position_z.push_back(vertex_position_z);
+    particles_momentum_direction_x.push_back(momentum_direction_x);
+    particles_momentum_direction_y.push_back(momentum_direction_y);
+    particles_momentum_direction_z.push_back(momentum_direction_z);
+    particles_kinetic_energy.push_back(kinetic_energy);
+    particles_pdgid.push_back(pdgid);
+    particles_total_energy_deposited_active.push_back(0.);
+    particles_total_energy_deposited_all.push_back(0.);
+    particles_tagged.push_back(tagged);
+    particles_parent_idx.push_back(parent_idx);
+
+}
+
+void SOAParticles::clear() {
+    particles_vertex_position_x.clear();
+    particles_vertex_position_y.clear();
+    particles_vertex_position_z.clear();
+
+    particles_momentum_direction_x.clear();
+    particles_momentum_direction_y.clear();
+    particles_momentum_direction_z.clear();
+
+    particles_kinetic_energy.clear();
+    particles_pdgid.clear();
+
+    particles_total_energy_deposited_active.clear();
+    particles_total_energy_deposited_all.clear();
+
+    trackid_to_idx.clear();
+
+}
 
 void B4aEventAction::accumulateStepData(G4VPhysicalVolume *volume, const G4Step *step) {
-
     G4Track* track = step->GetTrack();
     auto pos1 = track->GetVertexPosition();
     auto pos2 = track->GetPosition();
 
     auto calo_start_z = detector_->getCaloStartZ();
 
+    double limit = calo_start_z;
+    limit = limit*1.0;
+
     int particle_index = -1;
 
-    double limit = calo_start_z;
-//    limit = limit*0.80;
-    if (pos1.getZ() <= limit and pos2.getZ() > limit)
-    {
-        if (particles_buckets.find(track->GetTrackID()) == particles_buckets.end()) {
+    int parent_idx = -1;
+    if(particles_caught.trackid_to_idx.find(track->GetParentID()) != particles_caught.trackid_to_idx.end()) {
+        parent_idx = particles_caught.trackid_to_idx[track->GetParentID()];
+    }
 
-            particle_index = (int) particles_position.size();
-            particles_buckets[track->GetTrackID()] = particle_index;
+    bool catch_position=false;
+    if (particles_caught.trackid_to_idx.find(track->GetTrackID()) == particles_caught.trackid_to_idx.end()) {
+        if (pos1.getZ() <= limit) {
+            particle_index = (int) particles_caught.particles_vertex_position_x.size();
             tracks_buckets[track->GetTrackID()] = particle_index;
 
-            particles_position.push_back(track->GetPosition());
-            particles_kinetic_energy.push_back(track->GetKineticEnergy() / 1000.);
-            particles_total_energy_deposited.push_back(0.f);
-            particles_total_energy_deposited_2.push_back(0.f);
+            std::cout<<"Inserting " << particle_index<<" with parent "<<parent_idx<<" and energy "<<track->GetKineticEnergy()/1000<<" GeV"<<std::endl;
+//            std::cout<<"Position "<<pos1.x()<<" "<<pos1.y()<<" "<<pos1.z()<<std::endl;
+//            std::cout<<"Direction "<<track->GetMomentumDirection().x()<<" "<<track->GetMomentumDirection().y()<<" "<<track->GetMomentumDirection().z()<<std::endl;
+//            std::cout<<"PDGID "<<track->GetParticleDefinition()->GetPDGEncoding()<<std::endl;
+
+            particles_caught.add(
+                    pos1.x(),
+                    pos1.y(),
+                    pos1.z(),
+                    track->GetMomentumDirection().x(),
+                    track->GetMomentumDirection().y(),
+                    track->GetMomentumDirection().z(),
+                    track->GetKineticEnergy() / 1000.f,
+                    track->GetParticleDefinition()->GetPDGEncoding(),
+                    track->GetTrackID(),
+                    true,
+                    parent_idx
+                    );
+
+            positions_tracked_particle_index.push_back(particle_index);
+            positions_tracked_x.push_back(pos1.x());
+            positions_tracked_y.push_back(pos1.y());
+            positions_tracked_z.push_back(pos1.z());
+
+            catch_position = true;
+        }
+    } else {
+        particle_index = particles_caught.trackid_to_idx[track->GetTrackID()];
+        catch_position = true;
+    }
+
+    if(particle_index==-1) {
+        if (tracks_buckets.find(track->GetParentID()) != tracks_buckets.end()) {
+            particle_index = (int) tracks_buckets[track->GetParentID()];
+            tracks_buckets[track->GetTrackID()] = particle_index;
         }
     }
 
-    if (tracks_buckets.find(track->GetParentID()) != particles_buckets.end()) {
-        particle_index = (int) tracks_buckets[track->GetParentID()];
-        tracks_buckets[track->GetTrackID()] = particle_index;
+    if(particle_index!=-1) {
+        positions_tracked_particle_index.push_back(particle_index);
+        positions_tracked_x.push_back(pos2.x());
+        positions_tracked_y.push_back(pos2.y());
+        positions_tracked_z.push_back(pos2.z());
     }
 
     const auto &activesensors = detector_->getActiveSensors();
@@ -105,12 +175,11 @@ void B4aEventAction::accumulateStepData(G4VPhysicalVolume *volume, const G4Step 
     G4StepPoint *preStepPoint = step->GetPreStepPoint();
     G4TouchableHistory *theTouchable =
             (G4TouchableHistory *) (preStepPoint->GetTouchable());
-
     auto volume2 = theTouchable->GetVolume();
     G4int copyNo =volume2->GetCopyNo();
 
     auto indexedSensorContainers = detector_->getIndexedSensorContainers();
-    int idx = 1000000000000;
+    int idx = 1000000000;
 
     if (indexedSensorContainers->find(volume2->GetInstanceID()) != indexedSensorContainers->end()) {
         idx = (indexedSensorContainers)->at(volume2->GetInstanceID()).at(copyNo)->getGlobalDetID();
@@ -118,45 +187,50 @@ void B4aEventAction::accumulateStepData(G4VPhysicalVolume *volume, const G4Step 
 
     auto energy = step->GetTotalEnergyDeposit() / 1000;
 
-//    if (energy!=0) {
-//        std::cout<<"XYZ: "<<step->GetPreStepPoint()->GetPhysicalVolume()->GetName()<<" "<<step->GetPostStepPoint()->GetPhysicalVolume()->GetName()<<std::endl;
-//        std::cout<<"XYZ this "<<energy*1000 << " pre " << step->GetPreStepPoint()->GetTotalEnergy()<<" post "<<step->GetPostStepPoint()->GetTotalEnergy()<<" sub "<<step->GetPreStepPoint()->GetTotalEnergy()-step->GetPostStepPoint()->GetTotalEnergy() <<std::endl;
-//    }
+    total_deposit_all += energy;
 
-    total_deposit_2 += energy;
-
-
-
-    if (idx >= activesensors->size())return;//not active volume
-
-    total_deposit += energy;
+    bool is_active=true;
+    if (idx >= activesensors->size()) {
+        is_active = false;//not active volume
+        total_deposit_active += energy;
+    }
 
 
-    if (particle_index != -1) {
-        particles_total_energy_deposited_2[particle_index] =
-                particles_total_energy_deposited_2[particle_index] + energy;
-        hits_particles_id.push_back(particle_index);
-        hits_particles_deposits.push_back(energy);
-        hits_particles_sensor_idx.push_back(idx);
+    if (particle_index != -1 and energy != 0) {
+        if (is_active) {
+            particles_caught.particles_total_energy_deposited_active[particle_index] =
+                    particles_caught.particles_total_energy_deposited_active[particle_index] + energy;
+            hits_particles_id.push_back(particle_index);
+            hits_particles_deposits.push_back(energy);
+            hits_particles_sensor_idx.push_back(idx);
+        }
+
+        particles_caught.particles_total_energy_deposited_all[particle_index] =
+                particles_caught.particles_total_energy_deposited_all[particle_index] + energy;
 
     }
 
     if (idx < rechit_energy_.size()) {
-        rechit_energy_.at(idx) += energy; //GeV
+        rechit_energy_.at(idx) += energy;
+        rechit_stupid_pid.at(idx) = particle_index; //GeV
+        if (particle_index==-1) {
+            std::cout<<"Hello world "<<idx<<particle_index<<std::endl;
+        }
     }
 
-    if (particle_index != -1)
-        particles_total_energy_deposited[particle_index] = particles_total_energy_deposited[particle_index] + energy;
-    else
-        particle_index_not_found += 1;
-
-//    if (nsteps_%10000 == 0)
-//        G4cout<<"Particle index not found "<<particle_index_not_found << " / "<<nsteps_
-//        <<" and total deposit is "<<total_deposit<<" deposit 2 "<<total_deposit_2<<G4endl;
+//    result_arrays_int["fulldata_trackid"]->push_back(track->GetTrackID());
+//    result_arrays_int["fulldata_parent_trackid"]->push_back(track->GetParentID());
+//    result_arrays_double["fulldata_step_energy"]->push_back(step->GetTotalEnergyDeposit()/1000.);
+//    result_arrays_double["fulldata_track_vertex_x"]->push_back(pos1.x());
+//    result_arrays_double["fulldata_track_vertex_y"]->push_back(pos1.y());
+//    result_arrays_double["fulldata_track_vertex_z"]->push_back(pos1.z());
+//    result_arrays_double["fulldata_track_pos_x"]->push_back(pos2.x());
+//    result_arrays_double["fulldata_track_pos_y"]->push_back(pos2.y());
+//    result_arrays_double["fulldata_track_pos_z"]->push_back(pos2.z());
+//    result_arrays_double["fulldata_sensor_id"]->push_back(idx);
 
 }
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void B4aEventAction::BeginOfEventAction(const G4Event * /*event*/) {
     // initialisation per event
@@ -177,10 +251,14 @@ void B4aEventAction::BeginOfEventAction(const G4Event * /*event*/) {
     //
     //
 
+    result_arrays_double.clear();
+    result_arrays_int.clear();
+
     const auto &activesensors = detector_->getActiveSensors();
 
-    rechit_absorber_energy_ = std::vector<float>(activesensors->size(), 0);//reset
-    rechit_energy_ = std::vector<float>(activesensors->size(), 0);//reset
+    rechit_absorber_energy_ = std::vector<double>(activesensors->size(), 0);//reset
+    rechit_energy_ = std::vector<double>(activesensors->size(), 0);//reset
+    rechit_stupid_pid = std::vector<int>(activesensors->size(), 0);//reset
     rechit_x_.resize(activesensors->size(), 0);
     rechit_y_.resize(activesensors->size(), 0);
     rechit_z_.resize(activesensors->size(), 0);
@@ -203,22 +281,27 @@ void B4aEventAction::BeginOfEventAction(const G4Event * /*event*/) {
         rechit_idx__.at(i) = i;
     }
 
-    particles_vertex_position.clear();
-    particles_position.clear();
-    particles_kinetic_energy.clear();
-    particles_momentum_direction.clear();
-    particles_pdgid.clear();
-
-    particles_total_energy_deposited.clear();
-    particles_total_energy_deposited_2.clear();
     tracks_buckets.clear();
-    particles_buckets.clear();
+    particles_caught.clear();
+
     particle_index_not_found = 0;
-    total_deposit = 0;
-    total_deposit_2 = 0;
+    total_deposit_active = 0;
+    total_deposit_all = 0;
 
     hits_particles_id.clear();
     hits_particles_deposits.clear();
+    hits_particles_sensor_idx.clear();
+
+//    result_arrays_int["fulldata_trackid"] = std::shared_ptr<std::vector<int>>(new std::vector<int>());
+//    result_arrays_int["fulldata_parent_trackid"] = std::shared_ptr<std::vector<int>>(new std::vector<int>());
+//    result_arrays_double["fulldata_step_energy"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
+//    result_arrays_double["fulldata_track_vertex_x"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
+//    result_arrays_double["fulldata_track_vertex_y"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
+//    result_arrays_double["fulldata_track_vertex_z"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
+//    result_arrays_double["fulldata_track_pos_x"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
+//    result_arrays_double["fulldata_track_pos_y"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
+//    result_arrays_double["fulldata_track_pos_z"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
+//    result_arrays_double["fulldata_sensor_id"] = std::shared_ptr<std::vector<double>>(new std::vector<double>());
 }
 
 double getTrackMomentum(double pt, bool isgamma) {
@@ -266,15 +349,24 @@ void B4aEventAction::EndOfEventAction(const G4Event *event) {
 
 
     G4cout << "nsteps_ " << nsteps_ << G4endl;
-    G4cout << "Particles entering counted  " << particles_position.size() << G4endl;
+    G4cout << "Particles entering counted  " << particles_caught.particles_vertex_position_x.size() << G4endl;
+    G4cout << "Positions tracked  " << positions_tracked_particle_index.size() << G4endl;
+
+    int num_tagged_particles=0;
+    for(size_t i = 0; i< particles_caught.particles_vertex_position_x.size();i++) {
+        num_tagged_particles += (int)(particles_caught.particles_tagged[i]);
+    }
+    G4cout << "Particles tagged  " << num_tagged_particles << G4endl;
+
+
 
     float total_true = 0;
-    for(size_t i = 0; i < particles_position.size(); i++) {
-        G4cout<<"True vs dep vs dep 2 "<<particles_kinetic_energy[i] <<" "
-        << particles_total_energy_deposited[i]<<" "<<particles_total_energy_deposited_2[i] <<G4endl;
-        total_true += particles_kinetic_energy[i];
-    }
-    G4cout << "Total true "<< total_true << " and total dep "<<total_deposit_2 << G4endl;
+//    for(size_t i = 0; i < particles_caught.particles_vertex_position_x.size(); i++) {
+//        G4cout<<"True vs dep_active vs dep_all "<<particles_caught.particles_kinetic_energy[i] <<" "
+//        << particles_caught.particles_total_energy_deposited_active[i]<<" "<<particles_caught.particles_total_energy_deposited_all[i] <<G4endl;
+//        total_true += particles_caught.particles_kinetic_energy[i];
+//    }
+    G4cout << "Total true " << total_true << " and total dep " << total_deposit_all << G4endl;
     G4cout << "Hits: "<<rechit_energy_.size() <<G4endl;
 
 //clear();return;
@@ -330,19 +422,19 @@ void B4aEventAction::writeToBinaryFile(std::string filename, std::vector<T> &x, 
     file.close();
 }
 
-const std::vector<float> &B4aEventAction::getRechitEnergy() const {
+const std::vector<double> &B4aEventAction::getRechitEnergy() const {
     return rechit_energy_;
 }
 
-const std::vector<float> &B4aEventAction::getRechitX() const {
+const std::vector<double> &B4aEventAction::getRechitX() const {
     return rechit_x_;
 }
 
-const std::vector<float> &B4aEventAction::getRechitY() const {
+const std::vector<double> &B4aEventAction::getRechitY() const {
     return rechit_y_;
 }
 
-const std::vector<float> &B4aEventAction::getRechitZ() const {
+const std::vector<double> &B4aEventAction::getRechitZ() const {
     return rechit_z_;
 }
 
@@ -350,12 +442,16 @@ const std::vector<int> &B4aEventAction::getHitsParticles() const {
     return hits_particles_id;
 }
 
-const std::vector<float> &B4aEventAction::getHitsDeposits() const {
+const std::vector<double> &B4aEventAction::getHitsDeposits() const {
     return hits_particles_deposits;
 }
 
-const std::vector<float> &B4aEventAction::getHitsParticlesSensorIdx() const {
+const std::vector<int> &B4aEventAction::getHitsParticlesSensorIdx() const {
     return hits_particles_sensor_idx;
+}
+
+const std::vector<int> &B4aEventAction::getRechitStupidPid() const {
+    return rechit_stupid_pid;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

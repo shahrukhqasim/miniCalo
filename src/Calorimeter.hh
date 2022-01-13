@@ -11,6 +11,7 @@
 #define B4A_CALORIMETER_HH
 
 void initialize(long rseed, std::string detector_specs);
+void initialize_test(long rseed, std::string detector_specs);
 void wrap_up();
 pybind11::dict simulate_pu();
 
@@ -19,5 +20,5 @@ pybind11::dict simulate_particle(double position_x, double position_y, double po
                            double direction_z, int pdgid, double energy);
 
 pybind11::dict dict_check(int number_of_events, long rseed, std::string detector_specs);
-
+pybind11::dict get_sensor_data();
 #endif //B4A_CALORIMETER_HH

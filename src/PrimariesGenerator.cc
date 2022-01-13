@@ -97,66 +97,40 @@ void PrimariesGenerator::GenerateSingleVertex(G4PrimaryVertex *vertex) {
     xorig_ = 0;
     yorig_ = 0;
 
-
-    // // make a dummy primary proton
-    // G4PrimaryParticle* primaryParticle = new G4PrimaryParticle(2212);
-
     G4double zsign = 1.;
     std::vector<int> primaries;
-    primaries.reserve(1024 * 16);
-
     G4ThreeVector vertex_position(xorig_, yorig_, 0);
     G4double vertex_time(0.);
 
-
-    while (true) {
-        // loop until an event passing a gen filter is generated
-
-        unsigned iTry(0);
-        while (true) {
-            // loop until pythia generates a consistent event (should succeed)
-            if (!pythia_.next()) {
-                if (++iTry < 10)
-                    continue;
-//                pythia_.stat();
-            }
+    bool success;
+    for (int i = 0 ; i< 1000;i++) {
+        success = pythia_.next();
+        success = success and pythia_.event.size() > 0;
+        if (success)
             break;
-        }
-
-        if (iTry == 10) {
-            // failed event generation - make a dummy vertex (or just crash?)
-            G4cerr << "EVENT GENERATION FAILED!!!!" << G4endl;
-
-
-            std::cout << "Error in event gen PrimariesGenerator.cc" << std::endl;
-            exit(1);
-
-        }
-
-
-        primaries.clear();
-//            fjinputs_.clear();
-        double totalen = 0;
-
-        // cluster ak4 jets from final state particles
-
-        for (int i{0}; i < pythia_.event.size(); ++i) {
-            auto &part(pythia_.event[i]);
-
-            if (part.isFinal()) {
-                if (part.eta() < 4 && part.eta() > 1) {
-                        std::cout<<"B eta "<<part.eta()<<" and e "<<part.e()<<std::endl;
-
-                    primaries.push_back(i);
-                    totalen += part.e();
-                }
-            }
-        }
-        std::cout << "N nfilt E," << pythia_.event.size() << "," << primaries.size() << "," << totalen << std::endl;
-
-        break;
     }
 
+    if (not success)
+        throw std::runtime_error("Pythia failed to generate event after 1000 tries.");
+
+    primaries.clear();
+    double tota_energy = 0;
+
+    for (int i{0}; i < pythia_.event.size(); ++i) {
+        auto &part(pythia_.event[i]);
+
+        if (part.isFinal()) {
+            if (part.eta() < 4 && part.eta() > 1) {
+                    std::cout<<"B eta "<<part.eta()<<" and e "<<part.e()<<std::endl;
+
+                primaries.push_back(i);
+                tota_energy += part.e();
+            }
+        }
+    }
+    std::cout << "Total particles " << pythia_.event.size()<<std::endl;
+    std::cout<< "Particles 1 < eta < 4 " << primaries.size()<<std::endl;
+    std::cout << "Total energy 1 < eta < 4 " << tota_energy << std::endl;
 
     for (int ipart: primaries) {
         auto &pj(pythia_.event[ipart]);
@@ -166,17 +140,11 @@ void PrimariesGenerator::GenerateSingleVertex(G4PrimaryVertex *vertex) {
         if (partDefinition == nullptr)
             continue; //throw std::runtime_error(std::string("Unknown particle ") + std::to_string(pdgId));
 
-        G4PrimaryParticle *particle = new G4PrimaryParticle(pdgId);
+        auto *particle = new G4PrimaryParticle(pdgId);
         particle->SetMass(pj.m() * GeV);
         particle->SetMomentum(pj.px() * GeV, pj.py() * GeV, pj.pz() * GeV * zsign);
         particle->SetCharge(partDefinition->GetPDGCharge());
         vertex->SetPrimary(particle);
-
-
-//        std::cout<<"Shooting particle " << particle->GetPx() << " " << particle->GetPy()
-//        << " " << particle->GetPz() << " "<< particle->GetKineticEnergy() <<std::endl;
-
-        //      primaryParticle->SetDaughter(particle);
     }
 }
 
@@ -229,7 +197,12 @@ void PrimariesGenerator::GenerateParticle(G4Event *anEvent) {
     if (partDefinition == nullptr)
         throw std::runtime_error(std::string("Unknown particle ") + std::to_string(particle_pdgid));
 
+    std::cout<<"Shooting particle with energy "<<particle_energy<<" GeV"<<std::endl;
+    std::cout<<"Position "<<position.x()<<" "<<position.y()<<" "<<position.z()<<" "<<std::endl;
+    std::cout<<"Momentum direction "<<direction.x()<<" "<<direction.y()<<" "<<direction.z()<<" "<<std::endl;
+    std::cout<<"PGDID "<<particle_pdgid<<std::endl;
 
+    fParticleGun->SetParticleDefinition(partDefinition);
     fParticleGun->SetParticleMomentumDirection(direction);
     fParticleGun->SetParticleEnergy(particle_energy * GeV);
     fParticleGun->SetParticlePosition(position);

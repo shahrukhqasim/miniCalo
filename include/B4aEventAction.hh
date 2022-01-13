@@ -69,6 +69,26 @@ public:
     std::vector<double> particles_total_energy_deposited_all;
 
     std::unordered_map<int, int> trackid_to_idx;
+
+    std::vector<bool> particles_tagged;
+
+
+    std::vector<int> particles_parent_idx;
+
+    void add(
+            double vertex_position_x,
+            double vertex_position_y,
+            double vertex_position_z,
+            double momentum_direction_x,
+            double momentum_direction_y,
+            double momentum_direction_z,
+            double kinetic_energy,
+            int pdgid,
+            int trackid,
+            bool tagged,
+            int parent_idx
+            );
+    void clear();
 };
 
 
@@ -93,6 +113,7 @@ class B4aEventAction : public G4UserEventAction
 
     void clear(){
     	rechit_energy_.clear();
+        rechit_stupid_pid.clear();
     	allvolumes_.clear();
     	rechit_absorber_energy_.clear();
         rechit_x_.clear();
@@ -105,7 +126,18 @@ class B4aEventAction : public G4UserEventAction
         rechit_detid_.clear();
         nsteps_=0;
         totalen_=0;
+
+        particles_caught.clear();
+        positions_tracked_x.clear();
+        positions_tracked_y.clear();
+        positions_tracked_z.clear();
+        positions_tracked_particle_index.clear();
+
+
+
     }
+
+    const std::vector<int> &getRechitStupidPid() const;
 
 
     void setGenerator(B4PartGeneratorBase  * generator){
@@ -120,22 +152,23 @@ class B4aEventAction : public G4UserEventAction
     G4double  fEnergyAbs;
     G4double totalen_;
 public:
-    std::vector<float>  rechit_energy_,rechit_absorber_energy_;
-    std::vector<float>  rechit_x_;
-    std::vector<float>  rechit_y_;
-    std::vector<float>  rechit_z_;
-    std::vector<float>  rechit_layer_;
-    std::vector<float>  rechit_eta_;
-    std::vector<float>  rechit_phi_;
-    std::vector<float>  rechit_vxy_;
+    std::vector<int>  rechit_stupid_pid;
+    std::vector<double>  rechit_energy_,rechit_absorber_energy_;
+    std::vector<double>  rechit_x_;
+    std::vector<double>  rechit_y_;
+    std::vector<double>  rechit_z_;
+    std::vector<double>  rechit_layer_;
+    std::vector<double>  rechit_eta_;
+    std::vector<double>  rechit_phi_;
+    std::vector<double>  rechit_vxy_;
 public:
-    const std::vector<float> &getRechitEnergy() const;
+    const std::vector<double> &getRechitEnergy() const;
 
-    const std::vector<float> &getRechitX() const;
+    const std::vector<double> &getRechitX() const;
 
-    const std::vector<float> &getRechitY() const;
+    const std::vector<double> &getRechitY() const;
 
-    const std::vector<float> &getRechitZ() const;
+    const std::vector<double> &getRechitZ() const;
 
 private:
     std::vector<int>       rechit_detid_;
@@ -151,26 +184,26 @@ private:
 //    std::vector<double> particles_total_energy_deposited;
 //    std::vector<double> particles_total_energy_deposited_2;
 //    std::unordered_map<int, int> particles_buckets;
-//    std::unordered_map<int, int> tracks_buckets;
+    std::unordered_map<int, int> tracks_buckets;
 
-    SOAParticles particlesEntering;
+
 
     std::vector<int> hits_particles_id;
-    std::vector<float> hits_particles_deposits;
+    std::vector<double> hits_particles_deposits;
 public:
-    const std::vector<float> &getHitsParticlesSensorIdx() const;
+    const std::vector<int> &getHitsParticlesSensorIdx() const;
 
 private:
-    std::vector<float> hits_particles_sensor_idx;
+    std::vector<int> hits_particles_sensor_idx;
 public:
     const std::vector<int> &getHitsParticles() const;
 
-    const std::vector<float> &getHitsDeposits() const;
+    const std::vector<double> &getHitsDeposits() const;
 
 public:
     int particle_index_not_found = 0;
-    double total_deposit = 0;
-    double total_deposit_2 = 0;
+    double total_deposit_active = 0;
+    double total_deposit_all = 0;
 private:
 
     std::vector<int>  rechit_idx__;
@@ -189,6 +222,16 @@ private:
     std::string output_bin_folder;
 
     bool do_root;
+public:
+    std::vector<int> positions_tracked_particle_index;
+    std::vector<double> positions_tracked_x;
+    std::vector<double> positions_tracked_y;
+    std::vector<double> positions_tracked_z;
+    SOAParticles particles_caught;
+
+
+    std::unordered_map<std::string, std::shared_ptr<std::vector<int>>> result_arrays_int;
+    std::unordered_map<std::string, std::shared_ptr<std::vector<double>>> result_arrays_double;
 
 };
 
