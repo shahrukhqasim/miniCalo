@@ -11,24 +11,11 @@
 #include "G4VPhysicalVolume.hh"
 
 
-class sensorContainer{
+class SensorContainer{
 public:
-
-	sensorContainer(G4VPhysicalVolume * vol,
-	G4double eta,
-	G4double phi,
-	G4double null,
-	G4double posx,
-	G4double posy,
-	G4double posz,
-	int layer, G4int copyno):
-		vol_(vol),eta_(eta),phi_(phi),area_(null),
-		posx_(posx),posy_(posy),posz_(posz),energyscalefactor_(1),
-		layer_(layer),copyno_(copyno)
-	{
-		global_detid_=global_detid_counter_++;
-	}
-
+	SensorContainer(G4VPhysicalVolume *vol, G4double eta, G4double phi, G4double null, G4double posx,
+                    G4double posy, G4double posz, G4double pre_absorber_thickness, int layer,
+                    G4int copyno, G4double thickness);
 
 
 	const G4double& getArea() const {
@@ -67,7 +54,9 @@ public:
 		energyscalefactor_ = energyscalefactor;
 	}
 
-	const int& getLayer() const {
+    G4double getPreAbsorberThickness() const;
+
+    const int& getLayer() const {
 		return layer_;
 	}
 
@@ -80,11 +69,16 @@ public:
 	}
 
 private:
-	sensorContainer(){
+	SensorContainer(){
 			global_detid_=global_detid_counter_++;
 		}
 
-	G4VPhysicalVolume * vol_;
+public:
+    G4double getThickness() const;
+
+private:
+
+    G4VPhysicalVolume * vol_;
 	G4double eta_;
 	G4double phi_;
 	G4double area_;
@@ -101,6 +95,8 @@ private:
 	int global_detid_;
 
 	G4int  copyno_;
+    G4double thickness;
+    G4double pre_absorber_thickness;
 
 	static int global_detid_counter_;
 

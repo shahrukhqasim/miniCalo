@@ -39,7 +39,7 @@
 
 #include "G4ThreeVector.hh"
 
-#include "sensorContainer.h"
+#include "SensorContainer.h"
 #include "json/json.h"
 #include "G4Cons.hh"
 
@@ -76,8 +76,8 @@ G4Cons * createCons(
 
 class B4DetectorConstructionBase : public G4VUserDetectorConstruction {
 public:
-    virtual const std::vector<std::shared_ptr<sensorContainer>>* getActiveSensors()const = 0;
-	virtual const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<sensorContainer>>> *
+    virtual const std::vector<std::shared_ptr<SensorContainer>>* getActiveSensors()const = 0;
+	virtual const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<SensorContainer>>> *
 	getIndexedSensorContainers() const = 0;
     virtual double getCaloStartZ()const = 0;
     virtual G4VPhysicalVolume* getWorld() const = 0;
@@ -86,9 +86,9 @@ public:
 class B4DetectorConstruction : public B4DetectorConstructionBase
 {
 protected:
-	std::unordered_map<int, std::unordered_map<int, std::shared_ptr<sensorContainer>>> indexedSensorContainers;
+	std::unordered_map<int, std::unordered_map<int, std::shared_ptr<SensorContainer>>> indexedSensorContainers;
 public:
-	virtual const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<sensorContainer>>> *
+	virtual const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<SensorContainer>>> *
 	getIndexedSensorContainers() const;
 
 public:
@@ -119,7 +119,7 @@ public:
 
     bool isActiveVolume(G4VPhysicalVolume*)const;
 
-    virtual const std::vector<std::shared_ptr<sensorContainer>>* getActiveSensors()const;
+    virtual const std::vector<std::shared_ptr<SensorContainer>>* getActiveSensors()const;
 
      
   private:
@@ -129,9 +129,10 @@ public:
     G4VPhysicalVolume* DefineVolumes();
 
     void createActiveCellWheel(G4Material *material, G4double start_eta, G4double end_eta,
-								   G4double start_z, G4double end_z, G4double nphi, G4int layernum,
-								   G4int cellnum, G4LogicalVolume *layerLV, G4ThreeVector position,
-								   G4double z_step_max);
+                               G4double start_z, G4double end_z, G4double nphi, G4int layernum,
+                               G4int cellnum, G4LogicalVolume *layerLV, G4ThreeVector position,
+                               G4double z_step_max, G4double pre_absorber_thickness,
+                               int active_layer_num);
 
 
 	void createAbsorberCellWheel(G4Material *material, G4double start_eta, G4double end_eta,
@@ -152,7 +153,7 @@ public:
     static G4ThreadLocal G4GlobalMagFieldMessenger*  fMagFieldMessenger; 
                                       // magnetic field messenger
 
-    std::vector<std::shared_ptr<sensorContainer>> activecells_;
+    std::vector<std::shared_ptr<SensorContainer>> activecells_;
 
     G4bool  fCheckOverlaps; // option to activate checking of volumes overlaps
 
@@ -184,7 +185,7 @@ public:
 
 // inline functions
 
-inline const std::vector<std::shared_ptr<sensorContainer>>* B4DetectorConstruction::getActiveSensors()const{
+inline const std::vector<std::shared_ptr<SensorContainer>>* B4DetectorConstruction::getActiveSensors()const{
 	return &activecells_;
 }
 

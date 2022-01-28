@@ -64,6 +64,7 @@ B4aEventAction* eventAction;
 G4UImanager *ui_manager;
 PrimariesGenerator *primariesGenerator;
 B4DetectorConstruction * detector;
+bool collect_full_data;
 
 void wrap_up() {
     delete runManager;
@@ -82,7 +83,7 @@ void initialize_test(long rseed, std::string detector_specs) {
 
 }
 
-void initialize(long rseed, std::string detector_specs) {
+void initialize(long rseed, std::string detector_specs, std::string pythiadata, bool collect_full_data_) {
     rseed++;
 
     B4PartGeneratorBase::seedsoffset_ = 800 * rseed;
@@ -101,8 +102,9 @@ void initialize(long rseed, std::string detector_specs) {
     physicsList->RegisterPhysics(new G4StepLimiterPhysics());
     runManager->SetUserInitialization(physicsList);
 
-    eventAction = new B4aEventAction(std::string(), false);
-    primariesGenerator = new PrimariesGenerator;
+    collect_full_data=collect_full_data_;
+    eventAction = new B4aEventAction(std::string(), collect_full_data_);
+    primariesGenerator = new PrimariesGenerator(pythiadata);
     auto actionInitialization = new B4aActionInitialization(detector, eventAction, primariesGenerator);
     runManager->SetUserInitialization(actionInitialization);
 
@@ -198,6 +200,7 @@ py::dict collect() {
     py::array particles_total_energy_deposited_all = py::cast(eventAction->particles_caught.particles_total_energy_deposited_all);
     py::array particles_parent_id = py::cast(eventAction->particles_caught.particles_parent_idx);
 
+
 //    delete ev;
     py::dict d = py::dict("rechit_energy"_a =rechitEnergy,
                           "rechit_x"_a = rechitX,
@@ -232,14 +235,17 @@ py::dict collect() {
                           "particles_parent_idx"_a = particles_parent_id
     );
 
-    for (auto& it: eventAction->result_arrays_int) {
-        py::array np = py::cast(*it.second);
-        d[it.first.c_str()] = np;
+    if (collect_full_data) {
+        for (auto& it: eventAction->result_arrays_int) {
+            py::array np = py::cast(*it.second);
+            d[it.first.c_str()] = np;
+        }
+        for (auto& it: eventAction->result_arrays_double) {
+            py::array np = py::cast(*it.second);
+            d[it.first.c_str()] = np;
+        }
     }
-    for (auto& it: eventAction->result_arrays_double) {
-        py::array np = py::cast(*it.second);
-        d[it.first.c_str()] = np;
-    }
+
 
     return d;
 }
@@ -278,19 +284,31 @@ py::dict get_sensor_data() {
 
     const auto &activesensors = detector->getActiveSensors();
 
-    std::vector<double> rechit_x;
-    std::vector<double> rechit_y;
-    std::vector<double> rechit_z;
+    std::vector<double> sensors_x;
+    std::vector<double> sensors_y;
+    std::vector<double> sensors_z;
+    std::vector<double> sensors_area;
+    std::vector<int> sensors_active_layer_num;
+    std::vector<double> sensors_pre_absorber_thickness;
+    std::vector<double> sensors_thickness;
 
-    for(int i =0;i<activesensors->size();i++) {
-        rechit_x.push_back(activesensors->at(i)->getPosx());
-        rechit_y.push_back(activesensors->at(i)->getPosy());
-        rechit_z.push_back(activesensors->at(i)->getPosz());
+    for(const auto & activesensor : *activesensors) {
+        sensors_x.push_back(activesensor->getPosx());
+        sensors_y.push_back(activesensor->getPosy());
+        sensors_z.push_back(activesensor->getPosz());
+        sensors_area.push_back(activesensor->getArea());
+        sensors_active_layer_num.push_back(activesensor->getLayer());
+        sensors_pre_absorber_thickness.push_back(activesensor->getPreAbsorberThickness());
+        sensors_thickness.push_back(activesensor->getThickness());
     }
 
-    py::dict d = py::dict("rechit_x"_a = (py::array)py::cast(rechit_x),
-                          "rechit_y"_a = (py::array) py::cast(rechit_y),
-                          "rechit_z"_a = (py::array) py::cast(rechit_z));
+    py::dict d = py::dict("sensors_x"_a = (py::array)py::cast(sensors_x),
+                          "sensors_y"_a = (py::array) py::cast(sensors_y),
+                          "sensors_z"_a = (py::array) py::cast(sensors_z),
+                          "sensors_area"_a = (py::array) py::cast(sensors_area),
+                          "sensors_active_layer_num"_a = (py::array) py::cast(sensors_active_layer_num),
+                          "sensors_pre_absorber_thickness"_a = (py::array) py::cast(sensors_pre_absorber_thickness),
+                          "sensors_thickness"_a = (py::array) py::cast(sensors_thickness));
 
     return d;
 

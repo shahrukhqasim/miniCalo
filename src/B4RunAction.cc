@@ -50,9 +50,6 @@ B4RunAction::B4RunAction(B4PartGeneratorBase *gen, B4aEventAction *ev)
     // set printing event number per each event
     G4RunManager::GetRunManager()->SetPrintProgress(1);
 
-    // Create analysis manager
-    // The choice of analysis technology is done via selectin of a namespace
-    // in B4Analysis.hh
     generator_ = gen;
 
     G4cout << "run action initialised" << G4endl;
@@ -61,7 +58,7 @@ B4RunAction::B4RunAction(B4PartGeneratorBase *gen, B4aEventAction *ev)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 B4RunAction::~B4RunAction() {
-    delete G4AnalysisManager::Instance();
+//    delete G4AnalysisManager::Instance();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -72,21 +69,6 @@ void B4RunAction::BeginOfRunAction(const G4Run * /*run*/) {
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void B4RunAction::EndOfRunAction(const G4Run *run) {
-    // print histogram statistics
-    //
-    auto analysisManager = G4AnalysisManager::Instance();
-    if (false && analysisManager->GetH1(1)) {
-
-
-    }
-
-    // save histograms & ntuple
-    //
-
-    if (do_root) {
-        analysisManager->Write();
-        analysisManager->CloseFile();
-    }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -10,7 +10,7 @@
 #ifndef B4A_CALORIMETER_HH
 #define B4A_CALORIMETER_HH
 
-void initialize(long rseed, std::string detector_specs);
+void initialize(long rseed, std::string detector_specs, std::string pythiadata, bool collect_full_data);
 void initialize_test(long rseed, std::string detector_specs);
 void wrap_up();
 pybind11::dict simulate_pu();

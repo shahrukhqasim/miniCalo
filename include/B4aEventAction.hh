@@ -37,7 +37,7 @@
 #include "globals.hh"
 #include "B4PartGeneratorBase.hh"
 #include "G4StepPoint.hh"
-#include "sensorContainer.h"
+#include "SensorContainer.h"
 #include "B4DetectorConstruction.hh"
 #include "G4Step.hh"
 #include "B4RunAction.hh"
@@ -97,7 +97,7 @@ class B4aEventAction : public G4UserEventAction
 {
 	friend B4RunAction;
   public:
-    B4aEventAction(std::string output_folder_name, bool do_root);
+    B4aEventAction(std::string output_folder_name, bool collect_full_data);
     virtual ~B4aEventAction();
 
     virtual void  BeginOfEventAction(const G4Event* event);
@@ -221,7 +221,7 @@ private:
 
     std::string output_bin_folder;
 
-    bool do_root;
+    bool collect_full_data;
 public:
     std::vector<int> positions_tracked_particle_index;
     std::vector<double> positions_tracked_x;

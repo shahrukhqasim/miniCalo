@@ -21,7 +21,7 @@
 
 class PrimariesGenerator : public B4PartGeneratorBase {
 public:
-    PrimariesGenerator();
+    PrimariesGenerator(std::string pythiadata);
     void generate();
     void GenerateSingleVertex(G4PrimaryVertex* vertex);
 

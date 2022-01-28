@@ -61,7 +61,7 @@
 #include "G4Cons.hh"
 #include <cmath>
 
-#include "sensorContainer.h"
+#include "SensorContainer.h"
 
 #include <cstdlib>
 //#include "Math/Vector3D.h"
@@ -242,9 +242,10 @@ void B4DetectorConstruction::createAbsorberCellWheel(G4Material *material, G4dou
 
 
 void B4DetectorConstruction::createActiveCellWheel(G4Material *material, G4double start_eta, G4double end_eta,
-												   G4double start_z, G4double end_z, G4double nphi, G4int layernum,
-												   G4int cellnum, G4LogicalVolume *layerLV, G4ThreeVector position,
-												   G4double z_step_max) {
+                                                   G4double start_z, G4double end_z, G4double nphi, G4int layernum,
+                                                   G4int cellnum, G4LogicalVolume *layerLV, G4ThreeVector position,
+                                                   G4double z_step_max, G4double pre_absorber_thickness,
+                                                   int active_layer_num) {
 	G4double active_z_length=end_z - start_z;
 	G4double midz = active_z_length/2.;
 	G4double thickness = end_z - start_z;
@@ -263,6 +264,8 @@ void B4DetectorConstruction::createActiveCellWheel(G4Material *material, G4doubl
 								   active_z_length,
 								   0,
 								   2.*M_PI);
+    double surfaceArea = activewheelS->GetSurfaceArea();
+
 	activewheelLV = new G4LogicalVolume(
 			activewheelS,           // its solid
 			material,  // its material
@@ -318,29 +321,29 @@ void B4DetectorConstruction::createActiveCellWheel(G4Material *material, G4doubl
 
 	//only consider active material here
 
-	std::unordered_map<int, std::shared_ptr<sensorContainer>> thisVolSensorContainersDict;
+	std::unordered_map<int, std::shared_ptr<SensorContainer>> thisVolSensorContainersDict;
 
 //	std::cout<<"CHECK THIS: "<<start_eta<<" " <<end_eta<<" "<<start_z<<" "<<end_z<<std::endl;
 	double width_rad = 2.*M_PI/(double)nphi*rad;
+    double surfaceAreaSensor = surfaceArea / maxcopies;
 	for(G4int i =0;i<maxcopies;i++){
 		double phi= width_rad*(double)i; //offset doesn't really matter
 
 		double x = cos(phi)*etaToR(start_eta+(end_eta - start_eta)/2. ,start_z+thickness/2.);
 		double y = sin(phi)*etaToR(start_eta+(end_eta - start_eta)/2. ,start_z+thickness/2.);
 
-//		std::cout<<"["<<x<<","<<y<<"],"<<std::endl;
-
-        std::shared_ptr<sensorContainer> sc(new sensorContainer(
+        std::shared_ptr<SensorContainer> sc(new SensorContainer(
                 activeMaterial,
-                start_eta+(end_eta - start_eta)/2.,//sensor size   // G4double dimxy
+                start_eta + (end_eta - start_eta) / 2.,//sensor size   // G4double dimxy
                 phi,                              // G4double dimz,
-                0,       // G4double area,
+                surfaceAreaSensor,       // G4double area,
                 x,                   // G4double posx,
                 y,                   // G4double posy,
-                start_z+thickness/2.,                   // G4double posz,
-                layernum,
+                start_z + thickness / 2.,                   // G4double posz,
+                pre_absorber_thickness,
+                active_layer_num,
                 i //copyno
-        ));
+                , thickness));
 		thisVolSensorContainersDict[i] = sc;
 
 		activecells_.push_back(sc);
@@ -403,15 +406,15 @@ void B4DetectorConstruction::createActiveLayer(Json::Value &layer, int layernum)
 
 	for (auto &eta_segment : layer["eta_segments"]) {
 
-		createActiveCellWheel(material,
-							  eta_segment["start_eta"].asDouble(),
-							  eta_segment["end_eta"].asDouble(),
-							  layer["start_z"].asDouble() * m,
-							  layer["end_z"].asDouble() * m,
-							  eta_segment["phi_segments"].asDouble(),
-							  layernum,
-							  cellnum, m_worldLV, G4ThreeVector(0, 0, layer["start_z"].asDouble() * m),
-							  layer["z_step_max"].asDouble() * m);
+        createActiveCellWheel(material,
+                              eta_segment["start_eta"].asDouble(),
+                              eta_segment["end_eta"].asDouble(),
+                              layer["start_z"].asDouble() * m,
+                              layer["end_z"].asDouble() * m,
+                              eta_segment["phi_segments"].asDouble(),
+                              layernum,
+                              cellnum, m_worldLV, G4ThreeVector(0, 0, layer["start_z"].asDouble() * m),
+                              layer["z_step_max"].asDouble() * m, layer["pre_absorber_thickness"].asDouble() * m, layer["active_layer_num"].asInt());
 		cellnum += 1;
 	}
 }
@@ -626,7 +629,7 @@ void B4DetectorConstruction::ConstructSDandField()
 
 }
 
-const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<sensorContainer>>> *
+const std::unordered_map<int, std::unordered_map<int, std::shared_ptr<SensorContainer>>> *
 B4DetectorConstruction::getIndexedSensorContainers() const {
 	return &indexedSensorContainers;
 }

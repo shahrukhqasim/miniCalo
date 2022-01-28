@@ -23,7 +23,7 @@
 #include <cstdlib>
 
 
-PrimariesGenerator::PrimariesGenerator() :
+PrimariesGenerator::PrimariesGenerator(std::string pythiadata) :
         pythia_("/Users/shahrukhqasim/Workspace/NextCal/miniCalo/pythia8-data"),
         jetDef_(new fastjet::JetDefinition(fastjet::antikt_algorithm, 0.4)) {
 
@@ -200,7 +200,7 @@ void PrimariesGenerator::GenerateParticle(G4Event *anEvent) {
     std::cout<<"Shooting particle with energy "<<particle_energy<<" GeV"<<std::endl;
     std::cout<<"Position "<<position.x()<<" "<<position.y()<<" "<<position.z()<<" "<<std::endl;
     std::cout<<"Momentum direction "<<direction.x()<<" "<<direction.y()<<" "<<direction.z()<<" "<<std::endl;
-    std::cout<<"PGDID "<<particle_pdgid<<std::endl;
+    std::cout<<"PDGID "<<particle_pdgid<<std::endl;
 
     fParticleGun->SetParticleDefinition(partDefinition);
     fParticleGun->SetParticleMomentumDirection(direction);
